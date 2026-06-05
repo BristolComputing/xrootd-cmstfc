@@ -47,9 +47,9 @@ jobs:
             --exclude='.github' \
             ./ "/tmp/${NAME}-${VERSION}/"
           cp spec/xrootd-cmstfc.spec "$HOME/rpmbuild/SPECS/"
-          tar -C /tmp -czf "$HOME/rpmbuild/SOURCES/${NAME}-${VERSION}.tar.gz" \
+          tar -C /tmp -czf "$HOME/rpmbuild/SOURCES/${NAME}.tar.gz" \
             "${NAME}-${VERSION}"
-          tar -tzf "$HOME/rpmbuild/SOURCES/${NAME}-${VERSION}.tar.gz" | head
+          tar -tzf "$HOME/rpmbuild/SOURCES/${NAME}.tar.gz" | head
       - name: Build RPM
         run: |
           rpmbuild -ba "$HOME/rpmbuild/SPECS/xrootd-cmstfc.spec"
