@@ -1,6 +1,6 @@
 
 Name: xrootd-cmstfc
-Version: 1.5.1
+Version: 1.5.2
 Release: 3%{?dist}
 Summary: CMS TFC plugin for xrootd
 
@@ -26,30 +26,28 @@ Group: System Environment/Development
 %{summary}
 
 %prep
-%setup -q -c -n %{name}-%{version}
+%autosetup
 
 %build
-
-%cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo .
-make VERBOSE=1 %{?_smp_mflags}
+%cmake \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DCMAKE_INSTALL_LIBDIR=%{_libdir}
+%cmake_build
 
 %install
-rm -rf $RPM_BUILD_ROOT
-make install DESTDIR=$RPM_BUILD_ROOT
-
-%clean
-rm -rf $RPM_BUILD_ROOT
+%cmake_install
 
 %files
 %defattr(-,root,root,-)
-%{_libdir}/libXrdCmsTfc.so.*
-%{_libdir}/libXrdCmsTfc.so
+%{_libdir}/libXrdCmsTfc.so*
 
 %files devel
 %defattr(-,root,root,-)
 %{_includedir}/XrdCmsTfc.hh
 
 %changelog
+* Fri Jun 05 2026 Luke Kreczko <kreczko@cern.ch> - 1.5.2-3
+- cleanup spec for EL9
 * Thu Nov 29 2012 Brian Bockelman <bbockelm@cse.unl.edu> - 1.5.1-3
 - Move module back into base RPM.
 
@@ -72,4 +70,3 @@ rm -rf $RPM_BUILD_ROOT
 
 * Tue Aug 24 2010 Brian Bockelman <bbockelm@cse.unl.edu> 1.4.0-1
 - Break xrootd-cmstfc off into its own standalone RPM.
-
