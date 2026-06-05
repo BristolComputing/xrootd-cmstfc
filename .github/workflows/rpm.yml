@@ -1,0 +1,65 @@
+name: Build RPM
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  rpm:
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/rockylinux/rockylinux:9
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build tooling
+        run: |
+          dnf -y install epel-release dnf-plugins-core
+          dnf -y config-manager --add-repo https://xrootd.web.cern.ch/xrootd/repo/stable/el9/x86_64/
+          cat > /etc/yum.repos.d/xrootd-stable.repo <<'EOF'
+          [xrootd-stable]
+          name=XRootD Stable repository
+          baseurl=https://xrootd.web.cern.ch/xrootd/repo/stable/el9/$basearch/
+          gpgcheck=0
+          enabled=1
+          EOF
+          dnf -y install \
+            rpm-build rpmdevtools \
+            gcc-c++ make cmake git \
+            xrootd-devel xrootd-server-devel \
+            xerces-c-devel pcre-devel
+          dnf clean all
+
+      - name: Prepare rpmbuild tree
+        run: |
+          rpmdev-setuptree
+          VERSION="$(grep -E '^Version:' spec/xrootd-cmstfc.spec | awk '{print $2}')"
+          NAME="$(grep -E '^Name:' spec/xrootd-cmstfc.spec | awk '{print $2}')"
+          git archive \
+            --format=tar.gz \
+            --prefix="${NAME}-${VERSION}/" \
+            -o "$HOME/rpmbuild/SOURCES/${NAME}-${VERSION}.tar.gz" \
+            HEAD
+          cp spec/xrootd-cmstfc.spec "$HOME/rpmbuild/SPECS/"
+
+      - name: Build RPM
+        run: |
+          rpmbuild -ba "$HOME/rpmbuild/SPECS/xrootd-cmstfc.spec"
+
+      - name: Inspect RPM
+        run: |
+          rpm -qpi "$HOME"/rpmbuild/RPMS/x86_64/*.rpm
+          rpm -qpl "$HOME"/rpmbuild/RPMS/x86_64/*.rpm
+          rpm -qpR "$HOME"/rpmbuild/RPMS/x86_64/*.rpm
+
+      - name: Upload RPM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: xrootd-cmstfc-el9-rpms
+          path: |
+            ~/rpmbuild/RPMS/**/*.rpm
+            ~/rpmbuild/SRPMS/**/*.rpm
