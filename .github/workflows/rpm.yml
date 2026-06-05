@@ -31,24 +31,25 @@ jobs:
             rpm-build rpmdevtools \
             gcc-c++ make cmake git \
             xrootd-devel xrootd-server-devel \
-            xerces-c-devel pcre-devel
+            xerces-c-devel pcre-devel \
+            rsync
           dnf clean all
 
       - name: Prepare rpmbuild tree
         run: |
-          pwd
-          ls -lah
-          git status --short
           rpmdev-setuptree
           VERSION="$(grep -E '^Version:' spec/xrootd-cmstfc.spec | awk '{print $2}')"
           NAME="$(grep -E '^Name:' spec/xrootd-cmstfc.spec | awk '{print $2}')"
-          git archive \
-            --format=tar.gz \
-            --prefix="${NAME}-${VERSION}/" \
-            -o "$HOME/rpmbuild/SOURCES/${NAME}-${VERSION}.tar.gz" \
-            HEAD
+          mkdir -p "/tmp/${NAME}-${VERSION}"
+          rsync -a \
+            --exclude='.git' \
+            --exclude='build' \
+            --exclude='.github' \
+            ./ "/tmp/${NAME}-${VERSION}/"
           cp spec/xrootd-cmstfc.spec "$HOME/rpmbuild/SPECS/"
-
+          tar -C /tmp -czf "$HOME/rpmbuild/SOURCES/${NAME}-${VERSION}.tar.gz" \
+            "${NAME}-${VERSION}"
+          tar -tzf "$HOME/rpmbuild/SOURCES/${NAME}-${VERSION}.tar.gz" | head
       - name: Build RPM
         run: |
           rpmbuild -ba "$HOME/rpmbuild/SPECS/xrootd-cmstfc.spec"
